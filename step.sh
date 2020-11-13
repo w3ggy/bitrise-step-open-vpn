@@ -1,6 +1,21 @@
 #!/bin/bash
 set -eu
 
+echo "Configs:"
+echo "host: $host"
+echo "port: $port"
+echo "proto: $proto"
+echo "ca_crt: $(if [ ! -z "$ca_crt" ]; then echo "***"; fi)"
+echo "client_crt: $(if [ ! -z "$client_crt" ]; then echo "***"; fi)"
+echo "client_key: $(if [ ! -z "$client_key" ]; then echo "***"; fi)"
+echo ""
+
+log_path=$(mktemp)
+
+envman add --key "OPENVPN_LOG_PATH" --value "$log_path"
+echo "Log path exported (\$OPENVPN_LOG_PATH=$log_path)"
+echo ""
+
 case "$OSTYPE" in
   linux*)
     echo "Configuring for Ubuntu"
@@ -25,35 +40,42 @@ cert client.crt
 key client.key
 EOF
 
-    service openvpn start client > /dev/null 2>&1
-    sleep 5
+    echo ""
+    echo "Run openvpn"
+      service openvpn start client > $log_path 2>&1
+    echo "Done"
+    echo ""
 
-    if ifconfig | grep tun0 > /dev/null
-    then
-      echo "VPN connection succeeded"
-    else
-      echo "VPN connection failed!"
+    echo "Check status"
+    sleep 5
+    if ! ifconfig | grep tun0 > /dev/null ; then
+      echo "No open VPN tunnel found"
+      cat "$log_path"
       exit 1
     fi
+    echo "Done"
     ;;
   darwin*)
     echo "Configuring for Mac OS"
 
-    echo ${ca_crt} | base64 -D -o ca.crt > /dev/null 2>&1
-    echo ${client_crt} | base64 -D -o client.crt > /dev/null 2>&1
-    echo ${client_key} | base64 -D -o client.key > /dev/null 2>&1
+    echo ${ca_crt} | base64 -D -o ca.crt
+    echo ${client_crt} | base64 -D -o client.crt
+    echo ${client_key} | base64 -D -o client.key
+    echo ""
 
-    sudo openvpn --client --dev tun --proto ${proto} --remote ${host} ${port} --resolv-retry infinite --nobind --persist-key --persist-tun --comp-lzo --verb 3 --ca ca.crt --cert client.crt --key client.key > /dev/null 2>&1 &
+    echo "Run openvpn"
+      sudo openvpn --client --dev tun --proto ${proto} --remote ${host} ${port} --resolv-retry infinite --nobind --persist-key --persist-tun --comp-lzo --verb 3 --ca ca.crt --cert client.crt --key client.key > $log_path 2>&1 &
+    echo "Done"
+    echo ""
 
+    echo "Check status"
     sleep 5
-
-    if ifconfig -l | grep utun0 > /dev/null
-    then
-      echo "VPN connection succeeded"
-    else
-      echo "VPN connection failed!"
+    if ! ps -p $! >&-; then
+      echo "Process exited"
+      cat "$log_path"
       exit 1
     fi
+    echo "Done"
     ;;
   *)
     echo "Unknown operative system: $OSTYPE, exiting"

@@ -82,3 +82,7 @@ inputs:
       is_expand: true
       is_required: true
       is_sensitive: true
+outputs:
+  - OPENVPN_LOG_PATH:
+    opts:
+      title: "Output log file path"
