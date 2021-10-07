@@ -61,12 +61,13 @@ EOF
     echo ${ca_crt} | base64 -D -o ca.crt
     echo ${client_crt} | base64 -D -o client.crt
     echo ${client_key} | base64 -D -o client.key
-    echo ${user} > auth.txt
+    echo ${key_password} > auth.txt
+    echo ${user} >> auth.txt
     echo ${password} >> auth.txt
     echo ""
 
     echo "Run openvpn"
-      sudo openvpn --client --dev tun --proto ${proto} --remote ${host} ${port} --auth-user-pass auth.txt --auth SHA256 --resolv-retry infinite --nobind --persist-key --persist-tun --comp-lzo --verb 3 --ca ca.crt --cert client.crt --key client.key > $log_path 2>&1 &
+      sudo openvpn --client --dev tun --proto ${proto} --remote ${host} ${port} --askpass --auth-user-pass auth.txt --auth SHA256 --resolv-retry infinite --nobind --persist-key --persist-tun --comp-lzo --verb 3 --ca ca.crt --cert client.crt --key client.key > $log_path 2>&1 &
     echo "Done"
     echo ""
 
