@@ -5,8 +5,6 @@ echo "Configs:"
 echo "host: $host"
 echo "port: $port"
 echo "proto: $proto"
-echo ${user} > /etc/openvpn/auth.txt
-echo ${password} >> /etc/openvpn/auth.txt
 echo "ca_crt: $(if [ ! -z "$ca_crt" ]; then echo "***"; fi)"
 echo "client_crt: $(if [ ! -z "$client_crt" ]; then echo "***"; fi)"
 echo "client_key: $(if [ ! -z "$client_key" ]; then echo "***"; fi)"
